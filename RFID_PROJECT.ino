@@ -459,14 +459,15 @@ String getOrCreateCustomUID(String cardUID) {
   // Increment tap count
   cardTapCount[cardUID]++;
   
-  Serial.println("📊 Card: " + cardUID + " - Tap #" + String(cardTapCount[cardUID]) + "/4");
+  Serial.println("📊 Card: " + cardUID + " - Tap #" + String(cardTapCount[cardUID]) + "/5");
   
-  // Check if we need to generate new customUID (after 4 taps)
-  if (cardTapCount[cardUID] > 4) {
-    // Reset and create new customUID
+  // Check if we need to generate new customUID (after 5 taps - reset for reuse)
+  if (cardTapCount[cardUID] > 5) {
+    // Reset and create new customUID for reuse
     cardTapCount[cardUID] = 1;
     cardCustomUID[cardUID] = generateCustomUIDFromRFID(cardUID + String(millis())); // Add timestamp for uniqueness
-    Serial.println("🔄 Card limit reached! New CustomUID generated: " + cardCustomUID[cardUID]);
+    Serial.println("🔄 Card completed cycle! New CustomUID generated: " + cardCustomUID[cardUID]);
+    Serial.println("🎫 Card ready for new customer assignment");
   }
   
   // Save data to persistent storage
@@ -475,7 +476,7 @@ String getOrCreateCustomUID(String cardUID) {
   return cardCustomUID[cardUID];
 }
 
-// FIXED sendToMySQL FUNCTION - NO HANGING!
+// Update the JSON data structure in sendToMySQL function
 void sendToMySQL(String cardUID) {
     Serial.println("========================================");
     Serial.println("🔄 PREPARING TO SEND DATA TO DATABASE");
@@ -501,12 +502,12 @@ void sendToMySQL(String cardUID) {
     Serial.println("🆔 Custom UID: " + customUID);
     Serial.println("🔢 Tap count: " + String(currentTapCount));
     
-    // Create JSON matching your database structure
+    // Create JSON matching your database structure - UPDATED max_taps to 5
     DynamicJsonDocument doc(1024);
     doc["card_uid"] = cardUID;
     doc["custom_uid"] = customUID;
     doc["tap_count"] = currentTapCount;
-    doc["max_taps"] = 4;
+    doc["max_taps"] = 5;  // CHANGED from 4 to 5
     doc["tap_number"] = currentTapCount;
     doc["device_info"] = "ESP32-RFID-Scanner";
     doc["wifi_network"] = WiFi.SSID();
@@ -539,7 +540,7 @@ void sendToMySQL(String cardUID) {
             Serial.println("🎉 SUCCESS! Data sent to MySQL database");
             Serial.println("🏷️ Card UID: " + cardUID);
             Serial.println("🆔 Custom UID: " + customUID);
-            Serial.println("📊 Tap Count: " + String(currentTapCount) + "/4");
+            Serial.println("📊 Tap Count: " + String(currentTapCount) + "/5");
         } else {
             Serial.println("⚠️ Server responded with non-200 code: " + String(httpResponseCode));
         }
